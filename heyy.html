@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>هيي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --dark:#075E54;
+    --mid:#128C7E;
+    --accent:#25D366;
+    --bg-chat:#ECE5DD;
+    --bubble-out:#DCF8C6;
+    --bubble-in:#FFFFFF;
+    --text:#111B21;
+    --muted:#667781;
+    --danger:#E63946;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:'Cairo',sans-serif;
+    background:var(--bg-chat);
+    color:var(--text);
+    overflow:hidden;
+    direction:rtl;
+  }
+  #app{
+    max-width:520px;
+    margin:0 auto;
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    background:#fff;
+    position:relative;
+    overflow:hidden;
+  }
+  .hidden{display:none !important;}
+
+  /* ===== شاشة الدخول ===== */
+  #authScreen{
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:32px 24px;
+    background:linear-gradient(160deg,var(--dark),var(--mid));
+    color:#fff;
+    text-align:center;
+  }
+  #authScreen h1{font-size:44px;font-weight:800;margin-bottom:6px;letter-spacing:1px;}
+  #authScreen p{opacity:.85;margin-bottom:34px;font-size:14px;}
+  #authScreen input{
+    width:100%;
+    padding:14px 16px;
+    border-radius:12px;
+    border:none;
+    font-family:'Cairo',sans-serif;
+    font-size:16px;
+    margin-bottom:12px;
+    text-align:right;
+  }
+  #usernamePreview{
+    width:100%;
+    background:rgba(255,255,255,.12);
+    border-radius:10px;
+    padding:10px 14px;
+    font-size:13px;
+    margin-bottom:18px;
+    direction:ltr;
+    text-align:left;
+    color:#fff;
+  }
+  #usernamePreview b{color:var(--accent);}
+  #authScreen button{
+    width:100%;
+    padding:14px;
+    border-radius:12px;
+    border:none;
+    background:var(--accent);
+    color:#04220f;
+    font-weight:800;
+    font-size:16px;
+    font-family:'Cairo',sans-serif;
+    cursor:pointer;
+  }
+  #authScreen button:disabled{opacity:.5;}
+  #authError{color:#ffd7d7;font-size:12px;margin-top:10px;min-height:16px;}
+
+  /* ===== الهيدر العلوي ===== */
+  header.topbar{
+    background:var(--dark);
+    color:#fff;
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-shrink:0;
+  }
+  header.topbar h2{font-size:20px;font-weight:800;}
+  .icon-btn{
+    background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;padding:4px 8px;
+  }
+
+  /* ===== المحتوى ===== */
+  main{flex:1;overflow-y:auto;position:relative;}
+
+  /* قائمة المحادثات */
+  .chat-item{
+    display:flex;align-items:center;gap:12px;
+    padding:12px 16px;border-bottom:1px solid #f0f0f0;cursor:pointer;
+  }
+  .avatar{
+    width:50px;height:50px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:800;font-size:18px;flex-shrink:0;
+  }
+  .chat-info{flex:1;min-width:0;}
+  .chat-info .row1{display:flex;justify-content:space-between;align-items:center;}
+  .chat-info .name{font-weight:700;font-size:15px;}
+  .chat-info .time{font-size:11px;color:var(--muted);}
+  .chat-info .last{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .empty-state{padding:60px 24px;text-align:center;color:var(--muted);}
+  .empty-state div.emoji{font-size:44px;margin-bottom:10px;}
+
+  .fab{
+    position:absolute;bottom:20px;left:20px;
+    width:56px;height:56px;border-radius:50%;
+    background:var(--accent);color:#04220f;border:none;
+    font-size:26px;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  /* ===== شاشة الشات ===== */
+  #chatScreen{position:absolute;inset:0;background:var(--bg-chat);display:flex;flex-direction:column;z-index:20;}
+  #chatScreen .chatHeader{
+    background:var(--dark);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+  }
+  #chatScreen .chatHeader .name{font-weight:700;font-size:16px;}
+  #chatScreen .chatHeader .status{font-size:11px;opacity:.8;}
+  #messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:6px;}
+  .bubble{
+    max-width:75%;padding:8px 12px;border-radius:10px;font-size:14.5px;line-height:1.5;
+    position:relative;word-wrap:break-word;
+  }
+  .bubble.out{align-self:flex-start;background:var(--bubble-out);border-bottom-left-radius:2px;}
+  .bubble.in{align-self:flex-end;background:var(--bubble-in);border-bottom-right-radius:2px;box-shadow:0 1px 1px rgba(0,0,0,.08);}
+  .bubble .t{font-size:10px;color:var(--muted);margin-top:4px;text-align:left;}
+  .composer{
+    display:flex;align-items:center;gap:8px;padding:10px;background:#f0f0f0;flex-shrink:0;
+  }
+  .composer input{
+    flex:1;border:none;border-radius:20px;padding:12px 16px;font-family:'Cairo',sans-serif;font-size:14px;
+  }
+  .sendBtn{
+    width:44px;height:44px;border-radius:50%;background:var(--accent);border:none;color:#04220f;font-size:18px;cursor:pointer;flex-shrink:0;
+  }
+  .backBtn{background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer;}
+
+  /* ===== الحالات ===== */
+  .status-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f0f0;cursor:pointer;}
+  .status-ring{width:54px;height:54px;border-radius:50%;padding:2px;border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .status-ring.seen{border-color:#ccc;}
+  .section-label{padding:10px 16px;font-size:12px;color:var(--mid);font-weight:700;background:#fafafa;}
+  #myStatusBtn{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;border-bottom:1px solid #f0f0f0;}
+
+  /* ===== المكالمات ===== */
+  .call-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f0f0;}
+  .call-item .callIcon{font-size:18px;}
+  .call-item .missed{color:var(--danger);}
+  .callBtnRow{margin-right:auto;display:flex;gap:6px;}
+  .roundIcon{background:#eafaf3;color:var(--mid);border:none;width:38px;height:38px;border-radius:50%;font-size:16px;cursor:pointer;}
+
+  /* ===== شاشة المكالمة الجارية ===== */
+  #callScreen{
+    position:fixed;inset:0;background:linear-gradient(160deg,#075E54,#0b3d2e);
+    color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+    padding:60px 24px 50px;z-index:100;text-align:center;
+  }
+  #callScreen .bigAvatar{width:120px;height:120px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;color:#fff;margin-bottom:18px;}
+  #callScreen h2{font-size:24px;margin-bottom:8px;}
+  #callScreen p{opacity:.8;font-size:14px;}
+  .callControls{display:flex;gap:30px;}
+  .callControls button{
+    width:64px;height:64px;border-radius:50%;border:none;font-size:24px;cursor:pointer;
+  }
+  .btnAccept{background:var(--accent);color:#04220f;}
+  .btnDecline,.btnEnd{background:var(--danger);color:#fff;}
+
+  /* ===== الناف بار ===== */
+  nav.bottomnav{
+    display:flex;justify-content:space-around;align-items:center;
+    background:#fff;border-top:1px solid #eee;padding:8px 0 10px;flex-shrink:0;
+  }
+  nav.bottomnav button{
+    background:transparent;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;
+    color:var(--muted);font-family:'Cairo',sans-serif;font-size:11px;cursor:pointer;padding:4px 10px;
+  }
+  nav.bottomnav button.active{color:var(--mid);font-weight:700;}
+  nav.bottomnav .navicon{font-size:20px;}
+
+  /* مودال بسيط */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;}
+  .modal-box{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:380px;}
+  .modal-box h3{margin-bottom:14px;font-size:17px;}
+  .modal-box input,.modal-box textarea{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;font-family:'Cairo',sans-serif;margin-bottom:10px;font-size:14px;}
+  .modal-box .modalBtns{display:flex;gap:10px;margin-top:6px;}
+  .modal-box .modalBtns button{flex:1;padding:11px;border-radius:10px;border:none;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;}
+  .btnPrimary{background:var(--mid);color:#fff;}
+  .btnGhost{background:#eee;color:#333;}
+  .modalMsg{font-size:12px;color:var(--danger);min-height:16px;}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===== شاشة تسجيل الدخول ===== -->
+  <div id="authScreen">
+    <h1>هيي</h1>
+    <p>تواصل بسهولة مع أصحابك</p>
+    <input id="nameInput" type="text" placeholder="اكتب اسمك بالعربي أو الإنجليزي">
+    <div id="usernamePreview">اسم المستخدم: <b id="usernameOut">—</b></div>
+    <button id="startBtn" disabled>ابدأ</button>
+    <div id="authError"></div>
+  </div>
+
+  <!-- ===== الشاشة الرئيسية ===== -->
+  <div id="mainScreen" class="hidden" style="display:flex;flex-direction:column;height:100%;">
+
+    <header class="topbar">
+      <h2 id="pageTitle">المحادثات</h2>
+      <div>
+        <span id="myUsernameTag" style="font-size:12px;opacity:.85;"></span>
+      </div>
+    </header>
+
+    <main>
+      <!-- صفحة المحادثات -->
+      <div id="chatsPage">
+        <div id="chatsList"></div>
+        <button class="fab" id="newChatFab">＋</button>
+      </div>
+
+      <!-- صفحة الحالات -->
+      <div id="statusPage" class="hidden">
+        <div id="myStatusBtn">
+          <div class="status-ring seen" id="myStatusRing"><div class="avatar" id="myStatusAvatar" style="width:48px;height:48px;font-size:16px;">+</div></div>
+          <div>
+            <div style="font-weight:700;">حالتي</div>
+            <div style="font-size:12px;color:var(--muted);" id="myStatusSub">اضغط لإضافة حالة</div>
+          </div>
+        </div>
+        <div class="section-label">آخر التحديثات</div>
+        <div id="statusList"></div>
+      </div>
+
+      <!-- صفحة المكالمات -->
+      <div id="callsPage" class="hidden">
+        <div id="callsList"></div>
+      </div>
+    </main>
+
+    <nav class="bottomnav">
+      <button class="navbtn active" data-page="chatsPage" data-title="المحادثات">
+        <span class="navicon">💬</span>المحادثات
+      </button>
+      <button class="navbtn" data-page="statusPage" data-title="الحالات">
+        <span class="navicon">🟢</span>الحالات
+      </button>
+      <button class="navbtn" data-page="callsPage" data-title="المكالمات">
+        <span class="navicon">📞</span>المكالمات
+      </button>
+    </nav>
+  </div>
+
+  <!-- ===== شاشة الشات ===== -->
+  <div id="chatScreen" class="hidden">
+    <div class="chatHeader">
+      <button class="backBtn" id="chatBackBtn">›</button>
+      <div class="avatar" id="chatAvatar" style="width:38px;height:38px;font-size:14px;"></div>
+      <div style="flex:1;">
+        <div class="name" id="chatPeerName">—</div>
+        <div class="status" id="chatPeerStatus">دردشة</div>
+      </div>
+      <button class="icon-btn" id="startVoiceCallBtn">📞</button>
+    </div>
+    <div id="messages"></div>
+    <div class="composer">
+      <input id="msgInput" type="text" placeholder="اكتب رسالة">
+      <button class="sendBtn" id="sendBtn">➤</button>
+    </div>
+  </div>
+
+  <!-- ===== شاشة المكالمة ===== -->
+  <div id="callScreen" class="hidden">
+    <div>
+      <div class="bigAvatar" id="callAvatar"></div>
+      <h2 id="callPeerName">—</h2>
+      <p id="callStatusText">جاري الاتصال...</p>
+    </div>
+    <div class="callControls" id="callControlsIncoming">
+      <button class="btnDecline" id="declineCallBtn">✕</button>
+      <button class="btnAccept" id="acceptCallBtn">✓</button>
+    </div>
+    <div class="callControls hidden" id="callControlsActive">
+      <button class="btnEnd" id="endCallBtn">✕</button>
+    </div>
+  </div>
+
+  <!-- عناصر صوت -->
+  <audio id="remoteAudio" autoplay></audio>
+
+</div>
+
+<!-- ===== مودال محادثة جديدة ===== -->
+<div class="modal-overlay hidden" id="newChatModal">
+  <div class="modal-box">
+    <h3>محادثة جديدة</h3>
+    <input id="searchUsernameInput" type="text" placeholder="اكتب username الشخص (بالإنجليزي)">
+    <div class="modalMsg" id="newChatMsg"></div>
+    <div class="modalBtns">
+      <button class="btnGhost" id="cancelNewChat">إلغاء</button>
+      <button class="btnPrimary" id="confirmNewChat">بدء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== مودال حالة جديدة ===== -->
+<div class="modal-overlay hidden" id="newStatusModal">
+  <div class="modal-box">
+    <h3>إضافة حالة</h3>
+    <textarea id="statusTextInput" rows="4" placeholder="اكتب حالتك هنا..."></textarea>
+    <div class="modalBtns">
+      <button class="btnGhost" id="cancelStatus">إلغاء</button>
+      <button class="btnPrimary" id="confirmStatus">نشر</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+/* ============ إعداد Firebase ============ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDdV2TYI3OFv6WHdPsvY096PMlrcdo6Tjg",
+  authDomain: "game-6caf9.firebaseapp.com",
+  databaseURL: "https://game-6caf9-default-rtdb.firebaseio.com",
+  projectId: "game-6caf9",
+  storageBucket: "game-6caf9.firebasestorage.app",
+  messagingSenderId: "1001650525249",
+  appId: "1:1001650525249:web:acc0ed79c424bdcdd9e2c0"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+const db = firebase.database();
+
+let myUid = null;
+let myProfile = null;
+let currentChatId = null;
+let currentPeer = null;
+let currentCallId = null;
+let pc = null;
+let localStream = null;
+let callWithUid = null;
+let isCaller = false;
+
+const ICE_SERVERS = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+    { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" }
+  ]
+};
+
+/* ============ تحويل الاسم العربي لـ username إنجليزي ============ */
+const arMap = {
+  'ا':'a','أ':'a','إ':'e','آ':'a','ب':'b','ت':'t','ث':'th','ج':'j','ح':'h','خ':'kh',
+  'د':'d','ذ':'th','ر':'r','ز':'z','س':'s','ش':'sh','ص':'s','ض':'d','ط':'t','ظ':'z',
+  'ع':'a','غ':'gh','ف':'f','ق':'q','ك':'k','ل':'l','م':'m','ن':'n','ه':'h','و':'w',
+  'ي':'y','ى':'a','ة':'a','ء':'a','ئ':'e','ؤ':'o','ﻻ':'la'
+};
+function toEnglishUsername(nameRaw){
+  let out = '';
+  for(const ch of nameRaw){
+    if(arMap[ch] !== undefined) out += arMap[ch];
+    else if(/[a-zA-Z0-9]/.test(ch)) out += ch;
+    else if(ch === ' ') out += '.';
+  }
+  out = out.toLowerCase().replace(/[^a-z0-9.]/g,'').replace(/\.+/g,'.').replace(/^\.|\.$/g,'');
+  if(!out) out = 'user';
+  return out;
+}
+async function makeUniqueUsername(base){
+  let candidate = base;
+  let n = 0;
+  while(true){
+    const snap = await db.ref('usernames/'+candidate).get();
+    if(!snap.exists()) return candidate;
+    n++;
+    candidate = base + n;
+  }
+}
+function avatarColor(str){
+  const colors = ['#F94144','#F3722C','#F8961E','#F9C74F','#90BE6D','#43AA8B','#577590','#277DA1','#9C6ADE'];
+  let hash = 0;
+  for(let i=0;i<str.length;i++) hash = str.charCodeAt(i) + ((hash<<5)-hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+function initials(name){
+  return (name||'?').trim().charAt(0).toUpperCase();
+}
+function fmtTime(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+}
+
+/* ============ تسجيل الدخول ============ */
+const nameInput = document.getElementById('nameInput');
+const usernameOut = document.getElementById('usernameOut');
+const startBtn = document.getElementById('startBtn');
+const authError = document.getElementById('authError');
+
+nameInput.addEventListener('input', ()=>{
+  const val = nameInput.value.trim();
+  if(val.length > 0){
+    usernameOut.textContent = toEnglishUsername(val) || '—';
+    startBtn.disabled = false;
+  } else {
+    usernameOut.textContent = '—';
+    startBtn.disabled = true;
+  }
+});
+
+startBtn.addEventListener('click', async ()=>{
+  const displayName = nameInput.value.trim();
+  if(!displayName) return;
+  startBtn.disabled = true;
+  startBtn.textContent = 'جاري الإعداد...';
+  authError.textContent = '';
+  try{
+    const cred = await auth.signInAnonymously();
+    const uid = cred.user.uid;
+    const base = toEnglishUsername(displayName);
+    const username = await makeUniqueUsername(base);
+    const profile = {
+      name: displayName,
+      username: username,
+      color: avatarColor(username),
+      createdAt: Date.now(),
+      online: true
+    };
+    await db.ref('users/'+uid).set(profile);
+    await db.ref('usernames/'+username).set(uid);
+  }catch(e){
+    console.error(e);
+    if(e.code === 'auth/configuration-not-found'){
+      authError.textContent = 'لازم تفعّل Anonymous Authentication من Firebase Console: Authentication > Sign-in method > Anonymous > Enable';
+    } else if(e.code === 'auth/network-request-failed'){
+      authError.textContent = 'تأكد إنك متصل بالنت وحاول تاني';
+    } else {
+      authError.textContent = 'حصل خطأ: ' + e.message;
+    }
+    startBtn.disabled = false;
+    startBtn.textContent = 'ابدأ';
+  }
+});
+
+/* ============ حالة الدخول ============ */
+auth.onAuthStateChanged(async (user)=>{
+  if(user){
+    myUid = user.uid;
+    const snap = await db.ref('users/'+myUid).get();
+    if(snap.exists()){
+      myProfile = snap.val();
+      enterApp();
+    }
+    // لو مفيش بروفايل، سيبه في شاشة تسجيل الاسم
+    db.ref('users/'+myUid+'/online').set(true);
+    db.ref('users/'+myUid+'/online').onDisconnect().set(false);
+  }
+});
+
+function enterApp(){
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('mainScreen').classList.remove('hidden');
+  document.getElementById('mainScreen').style.display = 'flex';
+  document.getElementById('myUsernameTag').textContent = '@' + myProfile.username;
+  loadChats();
+  loadStatuses();
+  loadCalls();
+  listenForIncomingCalls();
+  setupNotifications();
+}
+
+/* ============ إشعارات الرسائل الجديدة ============ */
+const seenChatTs = {}; // آخر توقيت شوفناه لكل محادثة (عشان منبعتش إشعار للرسايل القديمة)
+
+let swRegistration = null;
+
+function setupNotifications(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => { swRegistration = reg; })
+      .catch(err => console.log('sw register failed', err));
+  }
+  watchAllChatsForNotifications();
+}
+
+function watchAllChatsForNotifications(){
+  db.ref('userChats/'+myUid).on('child_added', (snap)=>{
+    const chatId = snap.key;
+    db.ref('chats/'+chatId+'/meta').on('value', async (metaSnap)=>{
+      if(!metaSnap.exists()) return;
+      const meta = metaSnap.val();
+      if(!meta.lastTs || !meta.lastSender) return;
+
+      // أول مرة نشوف المحادثة دي، سجل التوقيت الحالي كنقطة بداية من غير إشعار
+      if(seenChatTs[chatId] === undefined){
+        seenChatTs[chatId] = meta.lastTs;
+        return;
+      }
+      // لو التوقيت مايتغيرش أو الرسالة مني أنا، تجاهل
+      if(meta.lastTs <= seenChatTs[chatId] || meta.lastSender === myUid){
+        seenChatTs[chatId] = meta.lastTs;
+        return;
+      }
+      seenChatTs[chatId] = meta.lastTs;
+
+      // متبعتش إشعار لو المستخدم فاتح نفس الشات دلوقتي وواخد باله (التاب فوكس)
+      if(currentChatId === chatId && !document.hidden) return;
+
+      const otherUid = meta.members.find(u=>u!==myUid);
+      const otherSnap = await db.ref('users/'+otherUid).get();
+      const otherName = otherSnap.exists() ? otherSnap.val().name : 'رسالة جديدة';
+
+      showNotification(otherName, meta.lastMessage, chatId, otherUid);
+    });
+  });
+}
+
+function showNotification(title, body, chatId, otherUid){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  const options = {
+    body: body || 'رسالة جديدة',
+    icon: 'https://cdn-icons-png.flaticon.com/512/2462/2462719.png',
+    badge: 'https://cdn-icons-png.flaticon.com/512/2462/2462719.png',
+    tag: chatId,
+    vibrate: [200,100,200]
+  };
+  if(swRegistration){
+    // الطريقة اللي بتشتغل على أندرويد
+    swRegistration.showNotification(title, options).catch(e=>console.log(e));
+  } else if('serviceWorker' in navigator){
+    navigator.serviceWorker.ready.then(reg => reg.showNotification(title, options));
+  } else {
+    try{
+      const n = new Notification(title, options);
+      n.onclick = ()=>{ window.focus(); n.close(); };
+    }catch(e){ console.log('notif error', e); }
+  }
+}
+
+/* ============ التنقل بين الصفحات ============ */
+document.querySelectorAll('.navbtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#chatsPage,#statusPage,#callsPage').forEach(p=>p.classList.add('hidden'));
+    document.getElementById(btn.dataset.page).classList.remove('hidden');
+    document.getElementById('pageTitle').textContent = btn.dataset.title;
+  });
+});
+
+/* ============ المحادثات ============ */
+function loadChats(){
+  db.ref('userChats/'+myUid).on('value', async (snap)=>{
+    const list = document.getElementById('chatsList');
+    if(!snap.exists()){
+      list.innerHTML = '<div class="empty-state"><div class="emoji">💬</div>ملقاش محادثات لسه<br>اضغط + وابدأ محادثة جديدة</div>';
+      return;
+    }
+    const chatIds = Object.keys(snap.val());
+    const rows = [];
+    for(const chatId of chatIds){
+      const metaSnap = await db.ref('chats/'+chatId+'/meta').get();
+      if(!metaSnap.exists()) continue;
+      const meta = metaSnap.val();
+      const otherUid = meta.members.find(u=>u!==myUid);
+      const otherSnap = await db.ref('users/'+otherUid).get();
+      if(!otherSnap.exists()) continue;
+      const other = otherSnap.val();
+      rows.push({chatId, other, otherUid, lastMessage: meta.lastMessage||'', lastTs: meta.lastTs||0});
+    }
+    rows.sort((a,b)=> b.lastTs - a.lastTs);
+    if(rows.length === 0){
+      list.innerHTML = '<div class="empty-state"><div class="emoji">💬</div>ملقاش محادثات لسه<br>اضغط + وابدأ محادثة جديدة</div>';
+      return;
+    }
+    list.innerHTML = rows.map(r=>`
+      <div class="chat-item" data-chatid="${r.chatId}" data-uid="${r.otherUid}" data-name="${r.other.name}" data-username="${r.other.username}" data-color="${r.other.color}">
+        <div class="avatar" style="background:${r.other.color};">${initials(r.other.name)}</div>
+        <div class="chat-info">
+          <div class="row1">
+            <span class="name">${r.other.name}</span>
+            <span class="time">${fmtTime(r.lastTs)}</span>
+          </div>
+          <div class="last">${r.lastMessage || 'ابدأ المحادثة'}</div>
+        </div>
+      </div>
+    `).join('');
+    list.querySelectorAll('.chat-item').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        openChat(el.dataset.chatid, el.dataset.uid, el.dataset.name, el.dataset.username, el.dataset.color);
+      });
+    });
+  });
+}
+
+/* مودال محادثة جديدة */
+const newChatModal = document.getElementById('newChatModal');
+document.getElementById('newChatFab').addEventListener('click', ()=>{
+  document.getElementById('searchUsernameInput').value = '';
+  document.getElementById('newChatMsg').textContent = '';
+  newChatModal.classList.remove('hidden');
+});
+document.getElementById('cancelNewChat').addEventListener('click', ()=> newChatModal.classList.add('hidden'));
+document.getElementById('confirmNewChat').addEventListener('click', async ()=>{
+  const uname = document.getElementById('searchUsernameInput').value.trim().toLowerCase().replace(/^@/,'');
+  const msgEl = document.getElementById('newChatMsg');
+  if(!uname){ msgEl.textContent = 'اكتب اسم مستخدم'; return; }
+  if(uname === myProfile.username){ msgEl.textContent = 'مينفعش تكلم نفسك 🙂'; return; }
+  const uidSnap = await db.ref('usernames/'+uname).get();
+  if(!uidSnap.exists()){ msgEl.textContent = 'مفيش حد بالاسم ده'; return; }
+  const otherUid = uidSnap.val();
+  const otherSnap = await db.ref('users/'+otherUid).get();
+  const other = otherSnap.val();
+  const chatId = [myUid, otherUid].sort().join('_');
+  const metaSnap = await db.ref('chats/'+chatId+'/meta').get();
+  if(!metaSnap.exists()){
+    await db.ref('chats/'+chatId+'/meta').set({members:[myUid, otherUid], lastMessage:'', lastTs: Date.now()});
+    await db.ref('userChats/'+myUid+'/'+chatId).set(true);
+    await db.ref('userChats/'+otherUid+'/'+chatId).set(true);
+  }
+  newChatModal.classList.add('hidden');
+  openChat(chatId, otherUid, other.name, other.username, other.color);
+});
+
+/* شاشة الشات */
+let messagesListener = null;
+function openChat(chatId, otherUid, name, username, color){
+  currentChatId = chatId;
+  currentPeer = {uid: otherUid, name, username, color};
+  document.getElementById('chatPeerName').textContent = name;
+  document.getElementById('chatPeerStatus').textContent = '@' + username;
+  const av = document.getElementById('chatAvatar');
+  av.style.background = color;
+  av.textContent = initials(name);
+  document.getElementById('chatScreen').classList.remove('hidden');
+  document.getElementById('messages').innerHTML = '';
+
+  if(messagesListener) db.ref('messages/'+chatId).off('value', messagesListener);
+  messagesListener = (snap)=>{
+    const box = document.getElementById('messages');
+    if(!snap.exists()){ box.innerHTML=''; return; }
+    const msgs = Object.values(snap.val()).sort((a,b)=>a.ts-b.ts);
+    box.innerHTML = msgs.map(m=>`
+      <div class="bubble ${m.from===myUid?'in':'out'}">
+        ${escapeHtml(m.text)}
+        <div class="t">${fmtTime(m.ts)}</div>
+      </div>
+    `).join('');
+    box.scrollTop = box.scrollHeight;
+  };
+  db.ref('messages/'+chatId).on('value', messagesListener);
+}
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+document.getElementById('chatBackBtn').addEventListener('click', ()=>{
+  document.getElementById('chatScreen').classList.add('hidden');
+  if(messagesListener){ db.ref('messages/'+currentChatId).off('value', messagesListener); messagesListener=null; }
+  currentChatId = null;
+});
+document.getElementById('sendBtn').addEventListener('click', sendMessage);
+document.getElementById('msgInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendMessage(); });
+async function sendMessage(){
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if(!text || !currentChatId) return;
+  input.value = '';
+  const ts = Date.now();
+  await db.ref('messages/'+currentChatId).push({from: myUid, text, ts});
+  await db.ref('chats/'+currentChatId+'/meta').update({lastMessage: text, lastTs: ts, lastSender: myUid});
+}
+
+/* ============ الحالات ============ */
+document.getElementById('myStatusAvatar').style.background = '#999';
+function loadStatuses(){
+  document.getElementById('myStatusAvatar').style.background = avatarColor(myProfile.username);
+  document.getElementById('myStatusAvatar').textContent = initials(myProfile.name);
+
+  db.ref('status/'+myUid).on('value', snap=>{
+    if(snap.exists()){
+      const items = Object.values(snap.val());
+      document.getElementById('myStatusSub').textContent = items.length + ' تحديث نشط';
+      document.getElementById('myStatusRing').classList.remove('seen');
+    } else {
+      document.getElementById('myStatusSub').textContent = 'اضغط لإضافة حالة';
+      document.getElementById('myStatusRing').classList.add('seen');
+    }
+  });
+
+  db.ref('status').on('value', async (snap)=>{
+    const list = document.getElementById('statusList');
+    if(!snap.exists()){ list.innerHTML = '<div class="empty-state">مفيش تحديثات دلوقتي</div>'; return; }
+    const now = Date.now();
+    const rows = [];
+    const all = snap.val();
+    for(const uid in all){
+      if(uid === myUid) continue;
+      const items = Object.values(all[uid]).filter(s=>s.expiresAt > now);
+      if(items.length === 0) continue;
+      const userSnap = await db.ref('users/'+uid).get();
+      if(!userSnap.exists()) continue;
+      const u = userSnap.val();
+      rows.push({uid, user:u, count: items.length, lastTs: Math.max(...items.map(i=>i.ts))});
+    }
+    if(rows.length === 0){ list.innerHTML = '<div class="empty-state">مفيش تحديثات دلوقتي</div>'; return; }
+    rows.sort((a,b)=>b.lastTs-a.lastTs);
+    list.innerHTML = rows.map(r=>`
+      <div class="status-item">
+        <div class="status-ring">
+          <div class="avatar" style="width:48px;height:48px;font-size:16px;background:${r.user.color};">${initials(r.user.name)}</div>
+        </div>
+        <div>
+          <div style="font-weight:700;">${r.user.name}</div>
+          <div style="font-size:12px;color:var(--muted);">${fmtTime(r.lastTs)} • ${r.count} تحديث</div>
+        </div>
+      </div>
+    `).join('');
+  });
+}
+const newStatusModal = document.getElementById('newStatusModal');
+document.getElementById('myStatusBtn').addEventListener('click', ()=>{
+  document.getElementById('statusTextInput').value = '';
+  newStatusModal.classList.remove('hidden');
+});
+document.getElementById('cancelStatus').addEventListener('click', ()=> newStatusModal.classList.add('hidden'));
+document.getElementById('confirmStatus').addEventListener('click', async ()=>{
+  const text = document.getElementById('statusTextInput').value.trim();
+  if(!text) return;
+  const ts = Date.now();
+  await db.ref('status/'+myUid).push({text, ts, expiresAt: ts + 24*60*60*1000});
+  newStatusModal.classList.add('hidden');
+});
+
+/* ============ المكالمات: السجل ============ */
+function loadCalls(){
+  db.ref('calls/'+myUid).on('value', async (snap)=>{
+    const list = document.getElementById('callsList');
+    if(!snap.exists()){
+      list.innerHTML = '<div class="empty-state"><div class="emoji">📞</div>مفيش مكالمات لسه</div>';
+      return;
+    }
+    const items = Object.values(snap.val()).sort((a,b)=>b.ts-a.ts).slice(0,50);
+    const rows = [];
+    for(const it of items){
+      const uSnap = await db.ref('users/'+it.withUid).get();
+      if(!uSnap.exists()) continue;
+      const u = uSnap.val();
+      rows.push({...it, user:u});
+    }
+    list.innerHTML = rows.map(r=>`
+      <div class="call-item">
+        <div class="avatar" style="background:${r.user.color};width:44px;height:44px;font-size:15px;">${initials(r.user.name)}</div>
+        <div>
+          <div style="font-weight:700;">${r.user.name}</div>
+          <div style="font-size:12px;" class="${r.missed?'missed':''}" style="color:var(--muted);">
+            ${r.direction==='out'?'صادرة ↗':(r.missed?'فائتة ✕':'واردة ↙')} • ${fmtTime(r.ts)}
+          </div>
+        </div>
+        <div class="callBtnRow">
+          <button class="roundIcon" data-uid="${r.withUid}" data-name="${r.user.name}" data-color="${r.user.color}">📞</button>
+        </div>
+      </div>
+    `).join('');
+    list.querySelectorAll('.roundIcon').forEach(btn=>{
+      btn.addEventListener('click', ()=> startCall(btn.dataset.uid, btn.dataset.name, btn.dataset.color));
+    });
+  });
+}
+async function logCall(withUid, direction, missed){
+  const otherSnap = await db.ref('users/'+withUid).get();
+  const ts = Date.now();
+  await db.ref('calls/'+myUid).push({withUid, direction, missed: !!missed, ts});
+  if(otherSnap.exists()){
+    await db.ref('calls/'+withUid).push({withUid: myUid, direction: direction==='out'?'in':'out', missed: !!missed, ts});
+  }
+}
+
+/* ============ مكالمات صوتية WebRTC ============ */
+document.getElementById('startVoiceCallBtn').addEventListener('click', ()=>{
+  if(currentPeer) startCall(currentPeer.uid, currentPeer.name, currentPeer.color);
+});
+
+async function startCall(peerUid, peerName, peerColor){
+  callWithUid = peerUid;
+  isCaller = true;
+  currentCallId = myUid + '_' + Date.now();
+  showCallScreen(peerName, peerColor, true);
+  document.getElementById('callStatusText').textContent = 'جاري الاتصال...';
+
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  pc = new RTCPeerConnection(ICE_SERVERS);
+  localStream.getTracks().forEach(t=>pc.addTrack(t, localStream));
+  pc.ontrack = (e)=>{ document.getElementById('remoteAudio').srcObject = e.streams[0]; };
+  pc.onicecandidate = (e)=>{
+    if(e.candidate){
+      db.ref('signaling/'+peerUid+'/candidates/'+currentCallId).push({from: myUid, candidate: e.candidate.toJSON()});
+    }
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await db.ref('signaling/'+peerUid+'/incoming').set({
+    from: myUid, fromName: myProfile.name, fromColor: myProfile.color,
+    callId: currentCallId, offer: offer, ts: Date.now()
+  });
+
+  db.ref('signaling/'+myUid+'/answer/'+currentCallId).on('value', async (snap)=>{
+    if(snap.exists() && pc && !pc.currentRemoteDescription){
+      const data = snap.val();
+      await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+      document.getElementById('callStatusText').textContent = 'متصل الآن';
+      document.getElementById('callControlsIncoming').classList.add('hidden');
+      document.getElementById('callControlsActive').classList.remove('hidden');
+    }
+  });
+  listenCandidates(currentCallId, peerUid);
+
+  db.ref('signaling/'+peerUid+'/incoming').onDisconnect();
+}
+
+function listenForIncomingCalls(){
+  db.ref('signaling/'+myUid+'/incoming').on('value', (snap)=>{
+    if(!snap.exists()) return;
+    const data = snap.val();
+    if(document.getElementById('callScreen').classList.contains('hidden')){
+      incomingCallData = data;
+      callWithUid = data.from;
+      isCaller = false;
+      currentCallId = data.callId;
+      showCallScreen(data.fromName, data.fromColor, false);
+      document.getElementById('callStatusText').textContent = 'مكالمة واردة...';
+    }
+  });
+}
+let incomingCallData = null;
+
+function showCallScreen(name, color, calling){
+  document.getElementById('callScreen').classList.remove('hidden');
+  document.getElementById('callPeerName').textContent = name;
+  const av = document.getElementById('callAvatar');
+  av.style.background = color || '#888';
+  av.textContent = initials(name);
+  if(calling){
+    document.getElementById('callControlsIncoming').classList.add('hidden');
+    document.getElementById('callControlsActive').classList.remove('hidden');
+  } else {
+    document.getElementById('callControlsIncoming').classList.remove('hidden');
+    document.getElementById('callControlsActive').classList.add('hidden');
+  }
+}
+
+document.getElementById('acceptCallBtn').addEventListener('click', async ()=>{
+  const data = incomingCallData;
+  if(!data) return;
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  pc = new RTCPeerConnection(ICE_SERVERS);
+  localStream.getTracks().forEach(t=>pc.addTrack(t, localStream));
+  pc.ontrack = (e)=>{ document.getElementById('remoteAudio').srcObject = e.streams[0]; };
+  pc.onicecandidate = (e)=>{
+    if(e.candidate){
+      db.ref('signaling/'+data.from+'/candidates/'+data.callId).push({from: myUid, candidate: e.candidate.toJSON()});
+    }
+  };
+  await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  await db.ref('signaling/'+data.from+'/answer/'+data.callId).set({answer});
+  document.getElementById('callStatusText').textContent = 'متصل الآن';
+  document.getElementById('callControlsIncoming').classList.add('hidden');
+  document.getElementById('callControlsActive').classList.remove('hidden');
+  listenCandidates(data.callId, data.from);
+  await db.ref('signaling/'+myUid+'/incoming').remove();
+  logCall(data.from, 'in', false);
+});
+
+document.getElementById('declineCallBtn').addEventListener('click', async ()=>{
+  if(incomingCallData){
+    await db.ref('signaling/'+incomingCallData.from+'/incoming').remove();
+    logCall(incomingCallData.from, 'in', true);
+  }
+  endCallCleanup();
+});
+document.getElementById('endCallBtn').addEventListener('click', async ()=>{
+  if(callWithUid){
+    await db.ref('signaling/'+callWithUid+'/incoming').remove();
+    if(isCaller) logCall(callWithUid, 'out', false);
+  }
+  endCallCleanup();
+});
+
+function listenCandidates(callId, peerUid){
+  db.ref('signaling/'+myUid+'/candidates/'+callId).on('child_added', async (snap)=>{
+    const data = snap.val();
+    if(data.from !== myUid && pc){
+      try{ await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); }catch(e){}
+    }
+  });
+}
+
+function endCallCleanup(){
+  document.getElementById('callScreen').classList.add('hidden');
+  if(pc){ pc.close(); pc = null; }
+  if(localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream = null; }
+  if(currentCallId){
+    db.ref('signaling/'+myUid+'/answer/'+currentCallId).off();
+    db.ref('signaling/'+myUid+'/candidates/'+currentCallId).off();
+    db.ref('signaling/'+myUid+'/candidates/'+currentCallId).remove();
+    if(callWithUid) db.ref('signaling/'+callWithUid+'/candidates/'+currentCallId).remove();
+  }
+  incomingCallData = null;
+  currentCallId = null;
+  callWithUid = null;
+}
+</script>
+</body>
+</html>
